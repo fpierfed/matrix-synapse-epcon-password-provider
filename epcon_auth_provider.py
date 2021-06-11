@@ -121,7 +121,7 @@ class EpconAuthProvider:
         Remember: room names need to be decorated with homeserver name...
         """
         return {
-            room_name for room_name, rule in self.room_rules
+            room_name for room_name, rule in self.room_rules.items()
             if rule(epcondata)
         }
 
