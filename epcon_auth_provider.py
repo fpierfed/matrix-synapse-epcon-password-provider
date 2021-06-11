@@ -143,7 +143,7 @@ class EpconAuthProvider:
                 room_alias = RoomAlias.from_string(room_name)
                 stub_config = {
                     "preset": "public_chat" if public else "private_chat",
-                    "room_name": room_alias.localpart,
+                    "room_alias_name": room_alias.localpart,
                     "creation_content": {"m.federate": False}
                 }
                 info, _ = await room_creation_handler.create_room(
@@ -154,6 +154,8 @@ class EpconAuthProvider:
             except Exception as e:
                 logger.error("Failed to create default channel %r: %r",
                              room_name, e)
+            else:
+                logger.info(f'Created {room_name} as {info}')
 
     @staticmethod
     def parse_config(config):
