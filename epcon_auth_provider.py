@@ -110,6 +110,7 @@ class EpconAuthProvider:
             raise RuntimeError('Missing endpoint config')
 
         self.endpoint = config.endpoint
+        self.admin_user = config.admin_user
         self.config = config
         logger.info('Endpoint: %s', self.endpoint)
 
@@ -124,14 +125,15 @@ class EpconAuthProvider:
             if rule(epcondata)
         }
 
-    async def create_epcon_rooms(self, user_id, epcondata):
-        if not epcondata['is_staff']:
-            logger.info(f'Unable to create rooms as non-admin {user_id}')
+    async def create_epcon_rooms(self):
+        if not await self.account_handler.check_user_exists(self.admin_user):
+            logger.info("Not creating default rooms as %s doesn't exists",
+                        self.admin_user)
+            return
 
         logger.info("Attempt to create default rooms for EuroPython")
-
         room_creation_handler = self.hs.get_room_creation_handler()
-        # create_requester(user_id)
+        create_requester(self.admin_user)
 
         for room_name, rule in self.room_rules.items():
             public = rule in PUBLIC_ROOM_RULES
@@ -145,7 +147,7 @@ class EpconAuthProvider:
                     "creation_content": {"m.federate": False}
                 }
                 info, _ = await room_creation_handler.create_room(
-                    create_requester(user_id),
+                    create_requester(self.admin_user),
                     config=stub_config,
                     ratelimit=False,
                 )
@@ -221,8 +223,8 @@ class EpconAuthProvider:
         * In order to assign users to rooms, we use the rules defined above.
         """
         # If the user is an admin and rooms were not created yet, create them.
-        if epcondata['is_staff']:
-            await self.create_epcon_rooms(user_id)
+        if user_id == self.admin_user:
+            await self.create_epcon_rooms()
 
         # Get the list of rooms the user already belongs to and check against
         # our rules.
